@@ -22,6 +22,7 @@ import io.trino.spi.security.Identity;
 import io.trino.spi.type.TimeZoneKey;
 import io.trino.sql.SqlEnvironmentConfig;
 import io.trino.sql.SqlPath;
+import io.trino.transaction.TransactionManager;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -42,6 +43,7 @@ import static java.util.Objects.requireNonNull;
 public class QuerySessionSupplier
         implements SessionSupplier
 {
+    private final TransactionManager transactionManager;
     private final Metadata metadata;
     private final AccessControl accessControl;
     private final SessionPropertyManager sessionPropertyManager;
@@ -52,11 +54,13 @@ public class QuerySessionSupplier
 
     @Inject
     public QuerySessionSupplier(
+            TransactionManager transactionManager,
             Metadata metadata,
             AccessControl accessControl,
             SessionPropertyManager sessionPropertyManager,
             SqlEnvironmentConfig config)
     {
+        this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
@@ -145,6 +149,11 @@ public class QuerySessionSupplier
             sessionBuilder.setClientTransactionSupport();
         }
 
-        return sessionBuilder.build();
+        Session session = sessionBuilder.build();
+        if (context.getTransactionId().isPresent()) {
+            session = session.beginTransactionId(context.getTransactionId().get(), transactionManager, accessControl);
+        }
+
+        return session;
     }
 }

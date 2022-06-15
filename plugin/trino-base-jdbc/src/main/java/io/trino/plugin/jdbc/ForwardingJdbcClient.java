@@ -390,4 +390,10 @@ public abstract class ForwardingJdbcClient
     {
         delegate().truncateTable(session, handle);
     }
+
+    @Override
+    public Map<String, List<String>> mockQuery(ConnectorSession session, String query)
+    {
+        return delegate().mockQuery(session, query);
+    }
 }

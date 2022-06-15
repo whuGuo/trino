@@ -36,6 +36,9 @@ import io.trino.spi.QueryId;
 import io.trino.spi.TrinoException;
 import io.trino.spi.resourcegroups.SelectionContext;
 import io.trino.spi.resourcegroups.SelectionCriteria;
+import io.trino.spi.utils.ClickhousePushdownContext;
+import io.trino.transaction.InMemoryTransactionManager;
+import io.trino.transaction.TransactionManager;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
@@ -44,6 +47,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
@@ -63,6 +67,7 @@ public class DispatchManager
     private final ResourceGroupManager<?> resourceGroupManager;
     private final DispatchQueryFactory dispatchQueryFactory;
     private final FailedDispatchQueryFactory failedDispatchQueryFactory;
+    private final TransactionManager transactionManager;
     private final AccessControl accessControl;
     private final SessionSupplier sessionSupplier;
     private final SessionPropertyDefaults sessionPropertyDefaults;
@@ -83,6 +88,7 @@ public class DispatchManager
             ResourceGroupManager<?> resourceGroupManager,
             DispatchQueryFactory dispatchQueryFactory,
             FailedDispatchQueryFactory failedDispatchQueryFactory,
+            TransactionManager transactionManager,
             AccessControl accessControl,
             SessionSupplier sessionSupplier,
             SessionPropertyDefaults sessionPropertyDefaults,
@@ -95,6 +101,7 @@ public class DispatchManager
         this.resourceGroupManager = requireNonNull(resourceGroupManager, "resourceGroupManager is null");
         this.dispatchQueryFactory = requireNonNull(dispatchQueryFactory, "dispatchQueryFactory is null");
         this.failedDispatchQueryFactory = requireNonNull(failedDispatchQueryFactory, "failedDispatchQueryFactory is null");
+        this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.sessionSupplier = requireNonNull(sessionSupplier, "sessionSupplier is null");
         this.sessionPropertyDefaults = requireNonNull(sessionPropertyDefaults, "sessionPropertyDefaults is null");
@@ -172,6 +179,29 @@ public class DispatchManager
 
             // decode session
             session = sessionSupplier.createSession(queryId, sessionContext);
+
+            if (query.contains("<pushdown>") && query.contains("</pushdown>")
+                    && transactionManager instanceof InMemoryTransactionManager) {
+                String pushdownSql = query.substring(query.indexOf("<pushdown>") + 10, query.indexOf("</pushdown>"));
+
+                ClickhousePushdownContext.create(session.getQueryId().getId());
+                ClickhousePushdownContext clickhousePushdownContext = ClickhousePushdownContext.get(session.getQueryId().getId());
+                clickhousePushdownContext.setPushdownSQL(pushdownSql);
+
+                Map<String, List<String>> result = ((InMemoryTransactionManager) transactionManager)
+                        .getCatalogManager().getCatalog("clickhouse").get()
+                        .getCatalogConnector().getConnector().mockQuery(session.toConnectorSession(),
+                                "select * from (" + pushdownSql + ") where 1=0");
+
+                String replaceSql = query.substring(query.indexOf("<pushdown>") - 1, query.indexOf("</pushdown>") + 12);
+
+                for (String key : result.keySet()) {
+                    List<String> columns = result.get(key);
+                    clickhousePushdownContext.setColumns(columns);
+                    query = query.replace(replaceSql, key);
+                    break;
+                }
+            }
 
             // check query execute permissions
             accessControl.checkCanExecuteQuery(sessionContext.getIdentity());

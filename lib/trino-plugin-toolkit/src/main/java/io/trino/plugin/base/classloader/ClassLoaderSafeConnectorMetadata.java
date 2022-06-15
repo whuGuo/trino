@@ -1022,4 +1022,10 @@ public class ClassLoaderSafeConnectorMetadata
             return delegate.supportsReportingWrittenBytes(session, connectorTableHandle);
         }
     }
+
+    @Override
+    public void applyClickHouseSqlPushdown(ConnectorTableHandle handle, String pushdownSql, List<String> columns)
+    {
+        delegate.applyClickHouseSqlPushdown(handle, pushdownSql, columns);
+    }
 }

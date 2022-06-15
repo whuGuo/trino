@@ -52,6 +52,11 @@ public class JdbcTransactionManager
         return metadata;
     }
 
+    public JdbcMetadataFactory getMetadataFactory()
+    {
+        return metadataFactory;
+    }
+
     public void commit(ConnectorTransactionHandle transaction)
     {
         checkArgument(transactions.remove(transaction) != null, "no such transaction: %s", transaction);

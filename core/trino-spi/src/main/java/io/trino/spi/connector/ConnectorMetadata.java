@@ -1350,4 +1350,9 @@ public interface ConnectorMetadata
     {
         return false;
     }
+
+    default void applyClickHouseSqlPushdown(ConnectorTableHandle handle, String pushdownSql, List<String> columns)
+    {
+        throw new TrinoException(NOT_SUPPORTED, "This connector does not support clickhouse sql pushdown");
+    }
 }

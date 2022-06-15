@@ -34,6 +34,7 @@ import io.trino.spi.transaction.IsolationLevel;
 import javax.inject.Inject;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -167,5 +168,15 @@ public class JdbcConnector
     public Set<ConnectorCapabilities> getCapabilities()
     {
         return immutableEnumSet(NOT_NULL_COLUMN_CONSTRAINT);
+    }
+
+    @Override
+    public Map<String, List<String>> mockQuery(ConnectorSession session, String sql)
+    {
+        JdbcMetadataFactory metadataFactory = transactionManager.getMetadataFactory();
+        if (metadataFactory instanceof DefaultJdbcMetadataFactory) {
+            return ((DefaultJdbcMetadataFactory) metadataFactory).getJdbcClient().mockQuery(session, sql);
+        }
+        throw new UnsupportedOperationException();
     }
 }

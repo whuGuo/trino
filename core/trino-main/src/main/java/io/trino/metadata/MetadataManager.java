@@ -92,9 +92,11 @@ import io.trino.spi.type.TypeManager;
 import io.trino.spi.type.TypeNotFoundException;
 import io.trino.spi.type.TypeOperators;
 import io.trino.spi.type.TypeSignature;
+import io.trino.spi.utils.ClickhousePushdownContext;
 import io.trino.sql.analyzer.TypeSignatureProvider;
 import io.trino.sql.planner.ConnectorExpressions;
 import io.trino.sql.planner.PartitioningHandle;
+import io.trino.sql.planner.plan.TableScanNode;
 import io.trino.sql.tree.QualifiedName;
 import io.trino.transaction.TransactionManager;
 import io.trino.type.BlockTypeOperators;
@@ -1542,6 +1544,16 @@ public final class MetadataManager
                             result.getGroupingColumnMapping(),
                             result.isPrecalculateStatistics());
                 });
+    }
+
+    @Override
+    public TableScanNode applyClickHouseSqlPushdown(ConnectorTableHandle handle, Session session, CatalogName catalogName)
+    {
+        ConnectorMetadata metadata = getMetadata(session, catalogName);
+        metadata.applyClickHouseSqlPushdown(handle, ClickhousePushdownContext.get(session.getQueryId().getId())
+                        .getPushdownSQL(), ClickhousePushdownContext.get(session.getQueryId().getId()).getColumns());
+        ClickhousePushdownContext.clear(session.getQueryId().getId());
+        return null;
     }
 
     @Override

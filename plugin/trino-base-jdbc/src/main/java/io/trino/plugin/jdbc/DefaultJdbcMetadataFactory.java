@@ -51,4 +51,9 @@ public class DefaultJdbcMetadataFactory
     {
         return new DefaultJdbcMetadata(transactionCachingJdbcClient, true);
     }
+
+    public JdbcClient getJdbcClient()
+    {
+        return jdbcClient;
+    }
 }

@@ -29,6 +29,7 @@ import io.trino.spi.connector.ColumnHandle;
 import io.trino.spi.connector.ColumnMetadata;
 import io.trino.spi.connector.ConnectorCapabilities;
 import io.trino.spi.connector.ConnectorOutputMetadata;
+import io.trino.spi.connector.ConnectorTableHandle;
 import io.trino.spi.connector.ConnectorTableMetadata;
 import io.trino.spi.connector.Constraint;
 import io.trino.spi.connector.ConstraintApplicationResult;
@@ -61,6 +62,7 @@ import io.trino.spi.statistics.TableStatisticsMetadata;
 import io.trino.spi.type.Type;
 import io.trino.sql.analyzer.TypeSignatureProvider;
 import io.trino.sql.planner.PartitioningHandle;
+import io.trino.sql.planner.plan.TableScanNode;
 import io.trino.sql.tree.QualifiedName;
 
 import java.util.Collection;
@@ -858,5 +860,11 @@ public class CountingAccessMetadata
     public Optional<TableHandle> getTableHandle(Session session, QualifiedObjectName tableName, Optional<TableVersion> startVersion, Optional<TableVersion> endVersion)
     {
         return delegate.getTableHandle(session, tableName, startVersion, endVersion);
+    }
+
+    @Override
+    public TableScanNode applyClickHouseSqlPushdown(ConnectorTableHandle handle, Session session, CatalogName catalogName)
+    {
+        return delegate.applyClickHouseSqlPushdown(handle, session, catalogName);
     }
 }

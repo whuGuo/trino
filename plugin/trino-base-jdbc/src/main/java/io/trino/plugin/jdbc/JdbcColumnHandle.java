@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 public final class JdbcColumnHandle
         implements ColumnHandle
 {
-    private final String columnName;
+    private String columnName;
     private final JdbcTypeHandle jdbcTypeHandle;
     private final Type columnType;
     private final boolean nullable;
@@ -106,6 +106,11 @@ public final class JdbcColumnHandle
                 .setName(columnName)
                 .setType(columnType)
                 .build();
+    }
+
+    public void setColumnName(String columnName)
+    {
+        this.columnName = columnName;
     }
 
     @Override

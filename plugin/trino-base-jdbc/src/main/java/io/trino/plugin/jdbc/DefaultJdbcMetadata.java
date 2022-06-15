@@ -875,4 +875,17 @@ public class DefaultJdbcMetadata
     {
         jdbcClient.renameSchema(session, schemaName, newSchemaName);
     }
+
+    @Override
+    public void applyClickHouseSqlPushdown(ConnectorTableHandle handle, String pushdownSql, List<String> columns)
+    {
+        JdbcQueryRelationHandle jdbcQueryRelationHandle = new JdbcQueryRelationHandle(
+                new PreparedQuery(pushdownSql, new ArrayList()));
+        ((JdbcTableHandle) handle).setRelationHandle(jdbcQueryRelationHandle);
+
+        for (int i = 0; i < columns.size(); i++) {
+            JdbcColumnHandle jdbcColumnHandle = ((JdbcTableHandle) handle).getColumns().get().get(i);
+            jdbcColumnHandle.setColumnName(columns.get(i));
+        }
+    }
 }

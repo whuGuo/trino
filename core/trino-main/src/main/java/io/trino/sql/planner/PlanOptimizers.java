@@ -38,6 +38,7 @@ import io.trino.sql.planner.iterative.rule.ApplyPreferredTableWriterPartitioning
 import io.trino.sql.planner.iterative.rule.ApplyTableScanRedirection;
 import io.trino.sql.planner.iterative.rule.ArraySortAfterArrayDistinct;
 import io.trino.sql.planner.iterative.rule.CanonicalizeExpressions;
+import io.trino.sql.planner.iterative.rule.ClickHouseSqlPushdown;
 import io.trino.sql.planner.iterative.rule.CreatePartialTopN;
 import io.trino.sql.planner.iterative.rule.DecorrelateInnerUnnestWithGlobalAggregation;
 import io.trino.sql.planner.iterative.rule.DecorrelateLeftUnnestWithGlobalAggregation;
@@ -607,6 +608,7 @@ public class PlanOptimizers
                 .add(new PushDistinctLimitIntoTableScan(plannerContext, typeAnalyzer))
                 .add(new PushTopNIntoTableScan(metadata))
                 .add(new RewriteTableFunctionToTableScan(plannerContext))
+                .add(new ClickHouseSqlPushdown(metadata))
                 .build();
         IterativeOptimizer pushIntoTableScanOptimizer = new IterativeOptimizer(
                 plannerContext,

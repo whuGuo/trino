@@ -31,6 +31,7 @@ import io.trino.spi.security.Identity;
 import io.trino.spi.security.SelectedRole;
 import io.trino.spi.session.ResourceEstimates;
 import io.trino.spi.type.TimeZoneKey;
+import io.trino.spi.utils.ClickhousePushdownContext;
 import io.trino.sql.SqlPath;
 import io.trino.sql.tree.Execute;
 import io.trino.transaction.TransactionId;
@@ -81,6 +82,7 @@ public final class Session
     private final SessionPropertyManager sessionPropertyManager;
     private final Map<String, String> preparedStatements;
     private final ProtocolHeaders protocolHeaders;
+    public ClickhousePushdownContext clickhousePushdownContext;
 
     public Session(
             QueryId queryId,
@@ -129,6 +131,7 @@ public final class Session
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
         this.preparedStatements = requireNonNull(preparedStatements, "preparedStatements is null");
         this.protocolHeaders = requireNonNull(protocolHeaders, "protocolHeaders is null");
+        this.clickhousePushdownContext = new ClickhousePushdownContext();
 
         requireNonNull(catalogProperties, "catalogProperties is null");
         ImmutableMap.Builder<String, Map<String, String>> catalogPropertiesBuilder = ImmutableMap.builder();

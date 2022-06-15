@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
 public final class JdbcTableHandle
         implements ConnectorTableHandle
 {
-    private final JdbcRelationHandle relationHandle;
+    private JdbcRelationHandle relationHandle;
 
     private final TupleDomain<ColumnHandle> constraint;
     // Additional to constraint
@@ -300,5 +300,10 @@ public final class JdbcTableHandle
         limit.ifPresent(value -> builder.append(" limit=").append(value));
         columns.ifPresent(value -> builder.append(" columns=").append(value));
         return builder.toString();
+    }
+
+    public void setRelationHandle(JdbcRelationHandle relationHandle)
+    {
+        this.relationHandle = relationHandle;
     }
 }

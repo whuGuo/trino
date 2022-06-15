@@ -58,6 +58,11 @@ public class Catalog
         return connectorName;
     }
 
+    public MaterializedConnector getCatalogConnector()
+    {
+        return catalogConnector;
+    }
+
     public CatalogMetadata beginTransaction(
             TransactionId transactionId,
             IsolationLevel isolationLevel,

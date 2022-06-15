@@ -20,6 +20,7 @@ import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.transaction.IsolationLevel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
@@ -253,5 +254,10 @@ public interface Connector
     default Set<ConnectorCapabilities> getCapabilities()
     {
         return emptySet();
+    }
+
+    default Map<String, List<String>> mockQuery(ConnectorSession session, String sql)
+    {
+        throw new UnsupportedOperationException();
     }
 }

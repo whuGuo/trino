@@ -56,6 +56,7 @@ public class TableScanNode
     private final Optional<PlanNodeStatsEstimate> statistics;
     private final boolean updateTarget;
     private final Optional<Boolean> useConnectorNodePartitioning;
+    private boolean isClickHousePushdown;
 
     /**
      * @deprecated Use explicit constructor instead. Calling this method when transforming the plan may lead to information loss.
@@ -265,5 +266,15 @@ public class TableScanNode
                 statistics,
                 updateTarget,
                 useConnectorNodePartitioning);
+    }
+
+    public boolean isClickHousePushdown()
+    {
+        return isClickHousePushdown;
+    }
+
+    public void setClickHousePushdown(boolean clickHousePushdown)
+    {
+        isClickHousePushdown = clickHousePushdown;
     }
 }

@@ -78,10 +78,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -160,6 +163,37 @@ import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.lang.System.arraycopy;
 import static java.math.RoundingMode.UNNECESSARY;
+import static java.sql.Types.ARRAY;
+import static java.sql.Types.BINARY;
+import static java.sql.Types.BIT;
+import static java.sql.Types.BLOB;
+import static java.sql.Types.CHAR;
+import static java.sql.Types.CLOB;
+import static java.sql.Types.DATALINK;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.DISTINCT;
+import static java.sql.Types.FLOAT;
+import static java.sql.Types.JAVA_OBJECT;
+import static java.sql.Types.LONGNVARCHAR;
+import static java.sql.Types.LONGVARBINARY;
+import static java.sql.Types.LONGVARCHAR;
+import static java.sql.Types.NCHAR;
+import static java.sql.Types.NCLOB;
+import static java.sql.Types.NULL;
+import static java.sql.Types.NUMERIC;
+import static java.sql.Types.NVARCHAR;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.REF;
+import static java.sql.Types.REF_CURSOR;
+import static java.sql.Types.ROWID;
+import static java.sql.Types.SQLXML;
+import static java.sql.Types.STRUCT;
+import static java.sql.Types.TIME;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
+import static java.sql.Types.TIME_WITH_TIMEZONE;
+import static java.sql.Types.VARBINARY;
+import static java.sql.Types.VARCHAR;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Locale.ENGLISH;
 
@@ -266,6 +300,127 @@ public class ClickHouseClient
                 quoted(null, schemaName, newTableName),
                 quoted(null, schemaName, tableName));
         execute(connection, sql);
+    }
+
+    public Map<String, List<String>> mockQuery(ConnectorSession session, String query)
+    {
+        try (Connection connection = connectionFactory.openConnection(session);
+                Statement statement = connection.createStatement()) {
+            return getTableSql(statement.executeQuery(query));
+        }
+        catch (SQLException e) {
+            TrinoException exception = new TrinoException(JDBC_ERROR, e);
+            exception.addSuppressed(new RuntimeException("Query: " + query));
+            throw exception;
+        }
+    }
+
+    public Map<String, List<String>> getTableSql(ResultSet resultSet) throws SQLException
+    {
+        List<String> columnNames = new ArrayList<>();
+
+        StringBuilder sb = new StringBuilder(" select ");
+        for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+            String columnName = resultSet.getMetaData().getColumnName(i);
+            columnNames.add(columnName);
+            String c = numberToType(resultSet.getMetaData().getColumnType(i));
+            sb.append(c);
+            sb.append(" as ");
+            sb.append(columnName);
+            sb.append(" ,");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append(" from clickhouse.default.pushdown_table");
+
+        HashMap<String, List<String>> map = new HashMap<>();
+        map.put(sb.toString(), columnNames);
+        return map;
+    }
+
+    private String numberToType(int type)
+    {
+        switch (type) {
+            case BIT :
+                return "BIT_0";
+            case Types.TINYINT:
+                return "TINYINT_0";
+            case Types.SMALLINT:
+                return "SMALLINT_0";
+            case Types.INTEGER:
+                return "INTEGER_0";
+            case Types.BIGINT:
+                return "BIGINT_0";
+            case FLOAT:
+                return "FLOAT_0";
+            case Types.REAL:
+                return "REAL_0";
+            case Types.DOUBLE:
+                return "DOUBLE_0";
+            case NUMERIC:
+                return "NUMERIC_0";
+            case DECIMAL:
+                return "DECIMAL_0";
+            case CHAR:
+                return "CHAR_0";
+            case VARCHAR:
+                return "VARCHAR_0";
+            case LONGVARCHAR:
+                return "LONGVARCHAR_0";
+            case Types.DATE:
+                return "DATE_0";
+            case TIME:
+                return "TIME_0";
+            case TIMESTAMP:
+                return "TIMESTAMP_0";
+            case BINARY:
+                return "BINARY_0";
+            case VARBINARY:
+                return "VARBINARY_0";
+            case LONGVARBINARY:
+                return "LONGVARBINARY_0";
+            case NULL:
+                return "NULL_0";
+            case OTHER:
+                return "OTHER_0";
+            case JAVA_OBJECT:
+                return "JAVA_OBJECT_0";
+            case DISTINCT:
+                return "DISTINCT_0";
+            case STRUCT:
+                return "STRUCT_0";
+            case ARRAY:
+                return "ARRAY_0";
+            case BLOB:
+                return "BLOB_0";
+            case CLOB:
+                return "CLOB_0";
+            case REF:
+                return "REF_0";
+            case DATALINK:
+                return "DATALINK_0";
+            case Types.BOOLEAN:
+                return "BOOLEAN_0";
+            case ROWID:
+                return "ROWID_0";
+            case NCHAR:
+                return "NCHAR_0";
+            case NVARCHAR:
+                return "NVARCHAR_0";
+            case LONGNVARCHAR:
+                return "LONGNVARCHAR_0";
+            case NCLOB:
+                return "NCLOB_0";
+            case SQLXML:
+                return "SQLXML_0";
+            case REF_CURSOR:
+                return "REF_CURSOR_0";
+            case TIME_WITH_TIMEZONE:
+                return "TIME_WITH_TIMEZONE_0";
+            case TIMESTAMP_WITH_TIMEZONE:
+                return "TIMESTAMP_WITH_TIMEZONE_0";
+            default:
+                return "VARCHAR_0";
+        }
     }
 
     @Override

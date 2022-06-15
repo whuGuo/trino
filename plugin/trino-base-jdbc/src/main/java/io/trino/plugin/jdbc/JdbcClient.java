@@ -212,4 +212,9 @@ public interface JdbcClient
     OptionalLong delete(ConnectorSession session, JdbcTableHandle handle);
 
     void truncateTable(ConnectorSession session, JdbcTableHandle handle);
+
+    default Map<String, List<String>> mockQuery(ConnectorSession connection, String query)
+    {
+        throw new UnsupportedOperationException();
+    }
 }
