@@ -888,4 +888,16 @@ public class DefaultJdbcMetadata
             jdbcColumnHandle.setColumnName(columns.get(i));
         }
     }
+
+    //  columns 和  getColumns size 可能不匹配。把 columns 去个重看看可行不
+    // select * from ("<pushdown>
+    //    ->
+    //    -> SELECT user_id,user_id a2,sequenceCount('(?1)(?t>600)(?2)')(time, event = '$AppStart', event = '$AppEnd') AS cn
+    //    -> FROM sensor_data.sensor_event
+    //    -> WHERE logdate = '20220826'
+    //    -> GROUP BY user_id
+    //    -> having cn>1
+    //    -> limit 10
+    //    ->
+    //    -> </pushdown>");
 }
