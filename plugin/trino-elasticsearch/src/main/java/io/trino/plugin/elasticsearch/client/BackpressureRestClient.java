@@ -26,6 +26,7 @@ import net.jodah.failsafe.function.CheckedSupplier;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
@@ -74,6 +75,13 @@ public class BackpressureRestClient
             throws IOException
     {
         return executeWithRetries(() -> delegate.performRequest(method, endpoint, headers));
+    }
+
+    public Response performRequest(String method, String endpoint, Map<String, String> params, HttpEntity entity,
+                                   HttpAsyncResponseConsumerFactory responseConsumerFactory, Header... headers)
+            throws IOException
+    {
+        return executeWithRetries(() -> delegate.performRequest(method, endpoint, params, entity, responseConsumerFactory, headers));
     }
 
     public Response performRequest(String method, String endpoint, Map<String, String> params, HttpEntity entity, Header... headers)

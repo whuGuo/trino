@@ -13,7 +13,6 @@
  */
 package io.trino.plugin.elasticsearch;
 
-import com.google.common.collect.ImmutableList;
 import io.trino.plugin.elasticsearch.client.ElasticsearchClient;
 import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.connector.ConnectorSplitManager;
@@ -26,10 +25,8 @@ import io.trino.spi.connector.FixedSplitSource;
 import javax.inject.Inject;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.trino.plugin.elasticsearch.ElasticsearchTableHandle.Type.QUERY;
 import static java.util.Objects.requireNonNull;
 
 public class ElasticsearchSplitManager
@@ -53,15 +50,15 @@ public class ElasticsearchSplitManager
     {
         ElasticsearchTableHandle tableHandle = (ElasticsearchTableHandle) table;
 
-        if (tableHandle.getType().equals(QUERY)) {
-            return new FixedSplitSource(ImmutableList.of(new ElasticsearchSplit(tableHandle.getIndex(), 0, Optional.empty())));
-        }
-        else {
-            List<ElasticsearchSplit> splits = client.getSearchShards(tableHandle.getIndex()).stream()
-                    .map(shard -> new ElasticsearchSplit(shard.getIndex(), shard.getId(), shard.getAddress()))
-                    .collect(toImmutableList());
+//        if (tableHandle.getType().equals(QUERY)) {
+//            return new FixedSplitSource(ImmutableList.of(new ElasticsearchSplit(tableHandle.getIndex(), 0, Optional.empty())));
+//        }
+//        else {
+        List<ElasticsearchSplit> splits = client.getSearchShards(tableHandle.getIndex()).stream()
+                .map(shard -> new ElasticsearchSplit(shard.getIndex(), shard.getId(), shard.getAddress()))
+                .collect(toImmutableList());
 
-            return new FixedSplitSource(splits);
-        }
+        return new FixedSplitSource(splits);
+//        }
     }
 }

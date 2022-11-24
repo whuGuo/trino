@@ -33,13 +33,13 @@ public class PassthroughQueryPageSource
     private final String result;
     private boolean done;
 
-    public PassthroughQueryPageSource(ElasticsearchClient client, ElasticsearchTableHandle table)
+    public PassthroughQueryPageSource(ElasticsearchClient client, ElasticsearchTableHandle table, int shard)
     {
         requireNonNull(client, "client is null");
         requireNonNull(table, "table is null");
 
         long start = System.nanoTime();
-        result = client.executeQuery(table.getIndex(), table.getQuery().get());
+        result = client.executeQuery(table.getIndex(), table.getQuery().get(), shard);
         readTimeNanos = System.nanoTime() - start;
     }
 

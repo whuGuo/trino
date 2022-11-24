@@ -55,6 +55,7 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
@@ -80,7 +81,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -132,6 +137,9 @@ public class ElasticsearchClient
     private final TimeStat nextPageStats = new TimeStat(MILLISECONDS);
     private final TimeStat countStats = new TimeStat(MILLISECONDS);
     private final TimeStat backpressureStats = new TimeStat(MILLISECONDS);
+
+    private static final int SHARD_COUNT = 40;
+    private static ExecutorService service = new ThreadPoolExecutor(8, 100, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
 
     @Inject
     public ElasticsearchClient(
@@ -536,7 +544,7 @@ public class ElasticsearchClient
         return jsonNode.get(name);
     }
 
-    public String executeQuery(String index, String query)
+    public String executeQuery(String index, String query, int shard)
     {
         String path = format("/%s/_search", index);
 
@@ -545,9 +553,10 @@ public class ElasticsearchClient
             response = client.getLowLevelClient()
                     .performRequest(
                             "GET",
-                            path,
+                            path + "?preference=_shards:" + shard,
                             ImmutableMap.of(),
                             new ByteArrayEntity(query.getBytes(UTF_8)),
+                            new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(104857600 * 10),
                             new BasicHeader("Content-Type", "application/json"),
                             new BasicHeader("Accept-Encoding", "application/json"));
         }
@@ -565,6 +574,60 @@ public class ElasticsearchClient
 
         return body;
     }
+
+//    public String executeQueryOnShard(String index, String query) throws ExecutionException, InterruptedException
+//    {
+//        String split = ",";
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("[");
+//        List<Future> list = new ArrayList();
+//        for (int i = 0; i < SHARD_COUNT; i++) {
+//            int finalI = i;
+//            Future<String> future = service.submit(() -> {
+//                return executeQueryOnShard(index, query, finalI);
+//            });
+//            list.add(future);
+//        }
+//        for (int i = 0; i < SHARD_COUNT; i++) {
+//            sb.append(list.get(i).get());
+//            if (i != SHARD_COUNT - 1) {
+//                sb.append(split);
+//            }
+//        }
+//        sb.append("]");
+//        return sb.toString();
+//    }
+
+//    public String executeQueryOnShard(String index, String query, int targetShard)
+//    {
+//        String path = format("/%s/_search", index);
+//
+//        Response response;
+//        try {
+//            response = client.getLowLevelClient()
+//                    .performRequest(
+//                            "GET",
+//                            path + "?preference=_shards:" + targetShard,
+//                            ImmutableMap.of(),
+//                            new ByteArrayEntity(query.getBytes(UTF_8)),
+//                            new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(104857600 * 10),
+//                            new BasicHeader("Content-Type", "application/json"),
+//                            new BasicHeader("Accept-Encoding", "application/json"));
+//        }
+//        catch (IOException e) {
+//            throw new TrinoException(ELASTICSEARCH_CONNECTION_ERROR, e);
+//        }
+//
+//        String body;
+//        try {
+//            body = EntityUtils.toString(response.getEntity());
+//        }
+//        catch (IOException e) {
+//            throw new TrinoException(ELASTICSEARCH_INVALID_RESPONSE, e);
+//        }
+//
+//        return body;
+//    }
 
     public SearchResponse beginSearch(String index, int shard, QueryBuilder query, Optional<List<String>> fields, List<String> documentFields, Optional<String> sort, OptionalLong limit)
     {
