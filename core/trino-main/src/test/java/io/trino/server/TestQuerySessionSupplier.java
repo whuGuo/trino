@@ -257,7 +257,6 @@ public class TestQuerySessionSupplier
                 .withTransactionManager(transactionManager)
                 .build();
         return new QuerySessionSupplier(
-                transactionManager,
                 metadata,
                 new AllowAllAccessControl(),
                 new SessionPropertyManager(),
